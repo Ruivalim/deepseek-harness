@@ -5,6 +5,7 @@ import {
   desktopTargetPlatform,
   developmentRuntimeDirectory,
   resolveDesktopBuildTarget,
+  resolveDesktopReleaseTarget,
   resolveDesktopTargetBuildPaths,
 } from '../scripts/desktop-build-paths.mjs'
 
@@ -79,7 +80,9 @@ describe('desktop build paths', () => {
     expect(desktopTargetPlatform('mac-arm64')).toEqual({ platform: 'darwin', arch: 'arm64' })
     expect(desktopTargetPlatform('mac-x64')).toEqual({ platform: 'darwin', arch: 'x64' })
     expect(desktopTargetPlatform('win-x64')).toEqual({ platform: 'win32', arch: 'x64' })
-    expect(() => desktopTargetPlatform('linux-x64' as 'mac-x64')).toThrow(/unsupported target/u)
+    expect(desktopTargetPlatform('linux-x64')).toEqual({ platform: 'linux', arch: 'x64' })
+    expect(desktopTargetPlatform('linux-arm64')).toEqual({ platform: 'linux', arch: 'arm64' })
+    expect(() => desktopTargetPlatform('freebsd-x64' as 'mac-x64')).toThrow(/unsupported target/u)
   })
 
   it('resolves environment overrides and rejects unsupported targets', () => {
@@ -88,7 +91,20 @@ describe('desktop build paths', () => {
       DSH_DESKTOP_TARGET_ARCH: 'x64',
     }, 'darwin', 'arm64')).toBe('mac-x64')
     expect(resolveDesktopBuildTarget({}, 'win32', 'x64')).toBe('win-x64')
-    expect(() => resolveDesktopBuildTarget({}, 'linux', 'x64')).toThrow(/unsupported target/u)
-    expect(() => desktopTargetBuildPaths('linux-x64' as 'mac-x64')).toThrow(/unsupported target/u)
+    expect(resolveDesktopBuildTarget({}, 'linux', 'x64')).toBe('linux-x64')
+    expect(resolveDesktopBuildTarget({}, 'linux', 'arm64')).toBe('linux-arm64')
+    expect(desktopTargetBuildPaths('linux-x64').root).toContain(join('targets', 'linux-x64'))
+    expect(() => resolveDesktopBuildTarget({}, 'freebsd', 'x64')).toThrow(/unsupported target/u)
+    expect(() => resolveDesktopBuildTarget({}, 'linux', 'ia32')).toThrow(/unsupported target/u)
+    expect(() => desktopTargetBuildPaths('freebsd-x64' as 'mac-x64')).toThrow(/unsupported target/u)
+  })
+
+  it('restricts release steps to the published targets', () => {
+    expect(resolveDesktopReleaseTarget({}, 'darwin', 'arm64')).toBe('mac-arm64')
+    expect(resolveDesktopReleaseTarget({}, 'win32', 'arm64')).toBe('win-x64')
+    expect(() => resolveDesktopReleaseTarget({}, 'linux', 'x64')).toThrow(/linux-x64 supports development launches only/u)
+    expect(() => resolveDesktopReleaseTarget({ DSH_DESKTOP_TARGET_PLATFORM: 'linux', DSH_DESKTOP_TARGET_ARCH: 'arm64' }, 'darwin', 'arm64'))
+      .toThrow(/linux-arm64 supports development launches only/u)
+    expect(() => resolveDesktopReleaseTarget({}, 'freebsd', 'x64')).toThrow(/unsupported target/u)
   })
 })

@@ -18,6 +18,7 @@ const state = vi.hoisted(() => ({
 vi.mock('../scripts/desktop-build-paths.mjs', async importOriginal => ({
   ...await importOriginal<typeof import('../scripts/desktop-build-paths.mjs')>(),
   resolveDesktopBuildTarget: () => state.target,
+  resolveDesktopReleaseTarget: () => state.target,
   resolveDesktopTargetBuildPaths: () => ({
     runtime: join(state.root, 'runtime'), electron: join(state.root, 'electron'), downloads: join(state.root, 'downloads'),
   }),

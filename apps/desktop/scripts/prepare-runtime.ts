@@ -8,7 +8,7 @@ import { parseArgs } from 'node:util'
 import { downloadArtifact } from '@electron/get'
 import extractZip from 'extract-zip'
 import { readPrimaryRuntime } from '../../../packages/skill/tool-workspace-dependencies/src/index.ts'
-import { desktopTargetPlatform, resolveDesktopBuildTarget, resolveDesktopTargetBuildPaths } from './desktop-build-paths.mjs'
+import { desktopTargetPlatform, resolveDesktopReleaseTarget, resolveDesktopTargetBuildPaths } from './desktop-build-paths.mjs'
 import { packagingStep } from './packaging-step.mjs'
 import { preparePrimaryRuntime } from './prepare-primary-runtime.ts'
 import { prepareDesktopCli } from './prepare-cli.ts'
@@ -17,7 +17,7 @@ import { prepareCommandLink } from './prepare-command-link.ts'
 const BUILD_PATHS = resolveDesktopTargetBuildPaths()
 const RUNTIME_ROOT = BUILD_PATHS.runtime
 
-type DesktopTarget = ReturnType<typeof desktopTargetPlatform>
+type DesktopTarget = { readonly platform: 'darwin' | 'win32'; readonly arch: 'arm64' | 'x64' }
 
 /** Extract the target Electron distribution and return its embedded Node version. */
 async function prepareElectron({ platform, arch }: DesktopTarget): Promise<string> {
@@ -50,7 +50,7 @@ function prepareCli({ platform, arch }: DesktopTarget): void {
 
 async function main(): Promise<void> {
   const { values } = parseArgs({ options: { 'defer-primary-runtime-smoke': { type: 'boolean', default: false } } })
-  const target = desktopTargetPlatform(resolveDesktopBuildTarget())
+  const target = desktopTargetPlatform(resolveDesktopReleaseTarget())
   rmSync(RUNTIME_ROOT, { recursive: true, force: true })
   mkdirSync(RUNTIME_ROOT, { recursive: true })
   const preparePrimary = () => packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'prepare:primary-runtime',

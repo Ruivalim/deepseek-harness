@@ -1,5 +1,8 @@
 import type { DesktopAutoUpdateTarget } from './desktop-auto-update-environment.mjs'
 
+/** Desktop target that local builds and development launches accept; Linux targets have no release publication or auto-update channel. */
+export type DesktopBuildTarget = DesktopAutoUpdateTarget | 'linux-x64' | 'linux-arm64'
+
 /** Mutable target directories plus shared download and package caches. */
 export interface DesktopTargetBuildPaths {
   readonly root: string
@@ -29,6 +32,21 @@ export function resolveDesktopBuildTarget(
   env?: NodeJS.ProcessEnv,
   hostPlatform?: NodeJS.Platform,
   hostArch?: string,
+): DesktopBuildTarget
+
+/**
+ * Resolve the build target of a release step: packaging, signing, retention, or publication.
+ * Linux targets build and launch locally but have no installer, signing, or update channel.
+ * @param env - Packaging environment.
+ * @param hostPlatform - Build-host platform used when no target override exists.
+ * @param hostArch - Build-host architecture used when no target override exists.
+ * @returns Release target name.
+ * @throws {Error} When the selected target is a Linux development target.
+ */
+export function resolveDesktopReleaseTarget(
+  env?: NodeJS.ProcessEnv,
+  hostPlatform?: NodeJS.Platform,
+  hostArch?: string,
 ): DesktopAutoUpdateTarget
 
 /**
@@ -37,7 +55,7 @@ export function resolveDesktopBuildTarget(
  * @param environment - Packaging environment with an optional absolute cache directory.
  * @returns Target paths plus shared download and package caches.
  */
-export function desktopTargetBuildPaths(target: DesktopAutoUpdateTarget, environment?: NodeJS.ProcessEnv): DesktopTargetBuildPaths
+export function desktopTargetBuildPaths(target: DesktopBuildTarget, environment?: NodeJS.ProcessEnv): DesktopTargetBuildPaths
 
 /**
  * Return the platform and architecture of the payload one release target prepares.
@@ -47,6 +65,10 @@ export function desktopTargetBuildPaths(target: DesktopAutoUpdateTarget, environ
  */
 export function desktopTargetPlatform(target: DesktopAutoUpdateTarget): {
   readonly platform: 'darwin' | 'win32'
+  readonly arch: 'arm64' | 'x64'
+}
+export function desktopTargetPlatform(target: DesktopBuildTarget): {
+  readonly platform: 'darwin' | 'win32' | 'linux'
   readonly arch: 'arm64' | 'x64'
 }
 
